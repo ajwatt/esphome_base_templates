@@ -12,27 +12,6 @@ logger:
   logs:
     sensor: DEBUG # (Overide any global setting, to VERBOSE will spamming the cse7766 sensors)
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "${devicename}"
-    password: !secret iot_wifi_password
-  # Default 15min, 0s will disable. Disabling because w/HA down the relays cycle on/off every 15 minutes.
-  reboot_timeout: 0s
-
-captive_portal:
-
-# Remove this line if you're not using Home Assistsant or your switch will restart every now and again
-api:
-  encryption: 
-    key: !secret api_encryption_key 
-
-ota:
-  - platform: esphome
-    password: !secret ota_password
-
 uart:
   rx_pin: RX
   baud_rate: 4800
