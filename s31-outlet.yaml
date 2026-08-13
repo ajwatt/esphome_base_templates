@@ -22,6 +22,8 @@ wifi:
   # Default 15min, 0s will disable. Disabling because w/HA down the relays cycle on/off every 15 minutes.
   reboot_timeout: 0s
 
+captive_portal:
+
 # Remove this line if you're not using Home Assistsant or your switch will restart every now and again
 api:
   encryption: 
