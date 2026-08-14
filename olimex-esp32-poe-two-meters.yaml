@@ -35,29 +35,31 @@ substitutions:
   flow_update_interval_seconds1: '35'
   flow_update_interval_seconds2: '15'
 
-packages:
-  meter1: !include
-    file: esphome-magnetometer.yaml
-    vars:
-      device_class: ${device_class1}
-      device_icon: ${device_icon1}
-      volume_unit: ${volume_unit1}
-      prefix_name: ${prefix1_name}
-      prefix_id: ${prefix1_id}
-      i2c_sda: ${i2c1_sda}
-      i2c_scl: ${i2c1_scl}
-      flow_update_interval_seconds: ${flow_update_interval_seconds1}
-  meter2: !include
-    file: esphome-magnetometer.yaml
-    vars:
-      device_class: ${device_class2}
-      device_icon: ${device_icon2}
-      volume_unit: ${volume_unit2}
-      prefix_name: ${prefix2_name}
-      prefix_id: ${prefix2_id}
-      i2c_sda: ${i2c2_sda}
-      i2c_scl: ${i2c2_scl}
-      flow_update_interval_seconds: ${flow_update_interval_seconds2}
+remote_package_files:
+  url: https://tronikos/esphome-magnetometer-water-gas-meter/
+  files:
+    - path: esphome-magnetometer.yaml
+      vars:
+        device_class: ${device_class1}
+        device_icon: ${device_icon1}
+        volume_unit: ${volume_unit1}
+        prefix_name: ${prefix1_name}
+        prefix_id: ${prefix1_id}
+        i2c_sda: ${i2c1_sda}
+        i2c_scl: ${i2c1_scl}
+        flow_update_interval_seconds: ${flow_update_interval_seconds1}
+    - path: esphome-magnetometer.yaml
+      vars:
+        device_class: ${device_class2}
+        device_icon: ${device_icon2}
+        volume_unit: ${volume_unit2}
+        prefix_name: ${prefix2_name}
+        prefix_id: ${prefix2_id}
+        i2c_sda: ${i2c2_sda}
+        i2c_scl: ${i2c2_scl}
+        flow_update_interval_seconds: ${flow_update_interval_seconds2}
+  ref: main
+  refresh: 0s
 
 switch:
   # LED flashes faster/slower as magnet rotates on water meter
