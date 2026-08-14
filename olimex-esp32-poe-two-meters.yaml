@@ -1,0 +1,68 @@
+---
+## Adapted for Olimex ESP32 POE from https://github.com/tronikos/esphome-magnetometer-water-gas-meter/blob/main/esphome-two-meters.yaml
+
+substitutions:
+  # For water one of: CCF, ft³, gal, L, m³
+  # For gas one of: CCF, ft³, m³
+  volume_unit: 'gal'
+  # Set to false only if needed during manual calibration.
+  # Do not keep them at false since these slow down the ESP device
+  # and reduce the accuracy during high flow.
+  hide_magnetic_field_strength_sensors: 'true'
+  hide_half_rotations_total_sensor: 'true'
+
+  gpio_led: GPIO04
+
+  device_class1: 'gas'
+  device_class2: 'water'
+
+  device_icon1: 'mdi:meter-gas'
+  device_icon2: 'mdi:water'
+
+  volume_unit1: 'ft³'
+  volume_unit2: 'gal'
+
+  prefix1_name: 'Gas '
+  prefix1_id: 'gas_'
+  prefix2_name: 'Water '
+  prefix2_id: 'water_'
+
+  i2c1_sda: GPIO01
+  i2c1_scl: GPIO03
+  i2c2_sda: GPIO32
+  i2c2_scl: GPIO33
+
+  flow_update_interval_seconds1: '35'
+  flow_update_interval_seconds2: '15'
+
+packages:
+  meter1: !include
+    file: esphome-magnetometer.yaml
+    vars:
+      device_class: ${device_class1}
+      device_icon: ${device_icon1}
+      volume_unit: ${volume_unit1}
+      prefix_name: ${prefix1_name}
+      prefix_id: ${prefix1_id}
+      i2c_sda: ${i2c1_sda}
+      i2c_scl: ${i2c1_scl}
+      flow_update_interval_seconds: ${flow_update_interval_seconds1}
+  meter2: !include
+    file: esphome-magnetometer.yaml
+    vars:
+      device_class: ${device_class2}
+      device_icon: ${device_icon2}
+      volume_unit: ${volume_unit2}
+      prefix_name: ${prefix2_name}
+      prefix_id: ${prefix2_id}
+      i2c_sda: ${i2c2_sda}
+      i2c_scl: ${i2c2_scl}
+      flow_update_interval_seconds: ${flow_update_interval_seconds2}
+
+switch:
+  # LED flashes faster/slower as magnet rotates on water meter
+  - platform: gpio
+    id: led
+    pin:
+      number: ${gpio_led}
+      inverted: true
