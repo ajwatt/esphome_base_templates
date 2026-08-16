@@ -1,0 +1,150 @@
+---
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100
+    then:
+      # Safety: Send close command to both valves on boot
+      - valve.close: latching_valve_1
+      - valve.close: latching_valve_2
+      - delay: 150s # OTA safety window
+      - script.execute: execute_valve_cycle
+
+esp8266:
+  board: d1_mini
+
+# Deep Sleep Configuration (5 minutes)
+deep_sleep:
+  id: deep_sleep_control
+  run_duration: 20s
+  sleep_duration: 5min
+
+# Sensors pulled from Home Assistant
+sensor:
+  - platform: homeassistant
+    id: valve_1_duration
+    entity_id: input_number.${valve_1_duration_id}
+    internal: true
+
+  - platform: homeassistant
+    id: valve_2_duration
+    entity_id: input_number.${valve_2_duration_id}
+    internal: true
+
+binary_sensor:
+  - platform: homeassistant
+    id: valve_1_run_requested
+    entity_id: input_boolean.${valve_1_request_id}
+    internal: true
+
+  - platform: homeassistant
+    id: valve_2_run_requested
+    entity_id: input_boolean.${valve_2_request_id}
+    internal: true
+
+output:
+  # Valve 1 Outputs
+  - platform: gpio
+    pin: GPIO14 # D5
+    id: v1_in1_pin
+
+  - platform: gpio
+    pin: GPIO12 # D6
+    id: v1_in2_pin
+
+  # Valve 2 Outputs
+  - platform: gpio
+    pin: GPIO5  # D1
+    id: v2_in1_pin
+
+  - platform: gpio
+    pin: GPIO4  # D2
+    id: v2_in2_pin
+
+valve:
+  # Valve 1
+  - platform: template
+    name: "Latching Solenoid Valve 1"
+    id: latching_valve_1
+    open_action:
+      - output.turn_off: v1_in2_pin
+      - output.turn_on: v1_in1_pin
+      - delay: 1s
+      - output.turn_off: v1_in1_pin
+    close_action:
+      - output.turn_off: v1_in1_pin
+      - output.turn_on: v1_in2_pin
+      - delay: 1s
+      - output.turn_off: v1_in2_pin
+    assumed_state: false
+    optimistic: true
+
+  # Valve 2
+  - platform: template
+    name: "Latching Solenoid Valve 2"
+    id: latching_valve_2
+    open_action:
+      - output.turn_off: v2_in2_pin
+      - output.turn_on: v2_in1_pin
+      - delay: 1s
+      - output.turn_off: v2_in1_pin
+    close_action:
+      - output.turn_off: v2_in1_pin
+      - output.turn_on: v2_in2_pin
+      - delay: 1s
+      - output.turn_off: v2_in2_pin
+    assumed_state: false
+    optimistic: true
+
+script:
+  - id: execute_valve_cycle
+    then:
+      - deep_sleep.prevent: deep_sleep_control 
+
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: valve_1_run_requested
+              - binary_sensor.is_on: valve_2_run_requested
+          then:
+            # --- PROCESS VALVE 1 ---
+            - if:
+                condition:
+                  binary_sensor.is_on: valve_1_run_requested
+                then:
+                  - homeassistant.action:
+                      action: input_boolean.turn_off
+                      data:
+                        entity_id: input_boolean.${valve_1_request_id}
+                  - valve.open: latching_valve_1
+                  - delay: !lambda |-
+                      float requested = id(valve_1_duration).state;
+                      if (isnan(requested) || requested <= 0) requested = 30;
+                      return (int)(std::min(requested, 1800.0f) * 1000);
+                  - valve.close: latching_valve_1
+                  - delay: 2s
+
+            # --- PROCESS VALVE 2 ---
+            - if:
+                condition:
+                  binary_sensor.is_on: valve_2_run_requested
+                then:
+                  - homeassistant.action:
+                      action: input_boolean.turn_off
+                      data:
+                        entity_id: input_boolean.${valve_2_request_id}
+                  - valve.open: latching_valve_2
+                  - delay: !lambda |-
+                      float requested = id(valve_2_duration).state;
+                      if (isnan(requested) || requested <= 0) requested = 30;
+                      return (int)(std::min(requested, 1800.0f) * 1000);
+                  - valve.close: latching_valve_2
+                  - delay: 2s
+
+            # Sleep after operations finish
+            - deep_sleep.enter: deep_sleep_control
+
+          else:
+            # If neither valve is requested, sleep immediately
+            - deep_sleep.enter: deep_sleep_control
